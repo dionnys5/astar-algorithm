@@ -17,3 +17,6 @@ Prints the frontier configuration on each iteration and at the end prints the pa
 | Station1 (name)        | Station2 (name)           | Estimate Distance (km)  | Real Distance (km) |
 | ---------------------- |:-------------------------:|:-----------------------:| ------------------:|
 | E1                     | E2                        | 12.0                    | 10.0               |
+
+
+- Loose adapted from: https://gist.github.com/jamiees2/5531924
