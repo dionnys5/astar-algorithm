@@ -30,12 +30,13 @@ def visit_node(estacao, goal, file_routes):
             else:
                 if (d['estacao1'] == current.estacao and d['estacao2'] == goal)\
                         or (d['estacao2'] == current.estacao and d['estacao1'] == goal):
-                    current.H = float(d['direto'])
+                    current.H = float(d['estimado'])
     return current
 
 
 def calcula_custo(parent, child, file_routes):
-    # Função que calcula o custo real do nó atual até o nó pai
+    # Função que calcula o custo real do nó pai até o nó filho
+    # Define F (usado na função heurística)
     with open(file_routes, 'r') as routes:
         g = 0
         data = csv.DictReader(routes, delimiter=';')
@@ -47,6 +48,7 @@ def calcula_custo(parent, child, file_routes):
 
 
 def get_min(fronteira):
+    # Função Heuristica
     # Função pra percorrer e encontrar o melhor caminho com base na fronteira atual
     menor = None
     for i in fronteira:
@@ -57,28 +59,27 @@ def get_min(fronteira):
                 menor = i
     return menor
 
+
 def aStar(start, goal, file_routes):
-    #Inicia a fronteira e as estações visitadas
-    fronteira = set()
-    visitados = set()
-    # Visita o nó inicial (define a estrutura)
+    '''Inicia a fronteira e as estações visitadas'''
+    fronteira = []
+    visitados = []
     current = visit_node(start, goal, file_routes)
     if current.estacao == goal:
         # Verifica se foi digitado a estação inicial = a estação destino
         return {'caminho': ['Já está no seu destino'], 'custo_final': current.F}
     current.F = current.H + current.G
-    #Adiciona o nó pai (inicial) na fronteira
-    fronteira.add(current)
-    # Continua a busca enquanto a fronteira não estiver vazia (ou se encontrar o melhor caminho)
+    fronteira.append(current)
+
     while fronteira:
         fronteira_atual = []
         for i in fronteira:
             fronteira_atual.append({'estação': i.estacao, 'valor função F': i.F})
         print(f"Fronteira ao visita o nó {current}: {fronteira_atual}")
         # Pega da fronteira o menor valor da função F (G + H)
-        current = get_min(fronteira)
-        #Se encontrar o que está procurar, retorna o caminho
-        if current.estacao == goal:
+        current = fronteira.pop(0)
+        visitados.append(current.estacao)
+        if current.estacao == goal: # Se encontrar o que está procurando retorna o caminho resultado
             fronteira_atual = []
             for i in fronteira:
                 fronteira_atual.append({'estação': i.estacao, 'valor função F': i.F})
@@ -86,33 +87,30 @@ def aStar(start, goal, file_routes):
             custo_final = current.F
             path = []
             while current.parent:
-                path.append(current)
+                path.append(current.estacao)
                 current = current.parent
-            path.append(current)
+            path.append(current.estacao)
             return {'caminho': path[::-1], 'custo_final': custo_final}
-        #Remove remove da fronteira antes de visitar
-        fronteira.remove(current)
-        #Adiciona aos visitados
-        visitados.add(current.estacao)
-        #Visita os filhos children e adiciona eles na fronteira
+
+        #Expande os filhos
         for node in current.children:
             child = visit_node(node, goal, file_routes)
-            #Se já foi visitado, não precisa visitar novamente
-            if child.estacao in visitados:
+
+            if child.estacao in visitados: #Se já foi visitado, não precisa visitar novamente
                 continue
-            #Calcula a função G (distância até o nó inicial)
-            child.G = current.G + calcula_custo(current, child, file_routes)
-            #Define o nó pai
+
+            child.G = current.G + calcula_custo(current, child, file_routes) #Calcula a função G (distância até o nó inicial)
             child.parent = current
             child.F = child.G + child.H
-            if child.H < current.H:
-                #Adiciona na fronteira só os filhos que estão indo pra mais perto do nó destino
-                fronteira.add(child)
+            #Adiciona na fronteira
+            fronteira.append(child)
+        fronteira = sorted(fronteira, key=lambda x: x.F)
     #Gera uma exceção se não tiver caminho
-    raise ValueError('No Path Found')
+    raise ValueError('Caminho não encontrado')
 
-result = aStar('5', '10', file_routes)
+result = aStar('6', '14', file_routes)
 print('RESULTADO: ')
-for i in result['caminho']:
-    print(i)
-print("Custo final: {:.2f} horas".format(float(result['custo_final'])/30)) # Cálcula o custo de tempo, que é a distância dividido por 30 (velocidade em km/h)
+print(f"Caminho: {result['caminho']}")
+# Cálcula o custo de tempo, que é a distância dividido por 30 (velocidade em km/h)
+print(f"Custo final: {result['custo_final']} Km")
+print("Custo final: {:.2f} horas".format(float(result['custo_final'])/30))
